@@ -15,6 +15,7 @@
  */
 package com.example.android.didyoufeelit;
 
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.widget.TextView;
@@ -34,11 +35,13 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Perform the HTTP request for earthquake data and process the response.
-        Event earthquake = Utils.fetchEarthquakeData(USGS_REQUEST_URL);
+        // Create an {@link AsyncTask} to perform the HTTP request to the given URL
+        // on a background thread. When the result is received on the main UI thread,
+        // then update the UI
+        // STEP IV
+        EarthquakeAsyncTask task = new EarthquakeAsyncTask();
+        task.execute(USGS_REQUEST_URL);
 
-        // Update the information displayed to the user.
-        updateUi(earthquake);
     }
 
     /**
@@ -53,5 +56,39 @@ public class MainActivity extends AppCompatActivity {
 
         TextView magnitudeTextView = (TextView) findViewById(R.id.perceived_magnitude);
         magnitudeTextView.setText(earthquake.perceivedStrength);
+    }
+
+    /// STEP I
+    private class EarthquakeAsyncTask extends AsyncTask<String, Void, Event> {
+        ///STEP II
+        /**
+         * This method is invoked (or called) on the background thread, so we can perform
+         * long running operations like making network request
+         *
+         * It is not okay to update the UI from a background thread, se we just return an
+         * {@link Event} object as the result
+         * @param urls
+         * @return
+         */
+        @Override
+        protected Event doInBackground(String... urls) {
+            // Perform the HTTP request for earthquake data and process the response.
+            Event earthquake = Utils.fetchEarthquakeData(urls[0]);
+            return earthquake;
+        }
+        ///STEP III
+        /**
+         * This method is invoked on the main UI Thread after the background work has been
+         * completed
+         *
+         * It is okay to modify the UI within this method. We take the {@link Event} object (which was returned from the doInBackground() method
+         * and update the views on the screen.
+         * @param earthquake
+         */
+        @Override
+        protected void onPostExecute(Event earthquake) {
+            // Update the information displayed to the user.
+            updateUi(earthquake);
+        }
     }
 }
